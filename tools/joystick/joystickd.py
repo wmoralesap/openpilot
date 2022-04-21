@@ -16,14 +16,22 @@ class Keyboard:
     self.axes_map = {'w': 'gb', 's': 'gb',
                      'a': 'steer', 'd': 'steer'}
     self.axes_values = {'gb': 0., 'steer': 0.}
+    self.lc_l = False
+    self.lc_r = False
 
   def update(self):
     key = self.kb.getch().lower()
     self.cancel = False
+    self.lc_l = False
+    self.lc_r = False
     if key == 'r':
       self.axes_values = {ax: 0. for ax in self.axes_values}
     elif key == 'c':
       self.cancel = True
+    elif key == 'f':
+      self.lc_l = True
+    elif key == 'g':
+      self.lc_r = True
     elif key in self.axes_map:
       axis = self.axes_map[key]
       incr = self.axis_increment if key in ['w', 'a'] else -self.axis_increment
@@ -57,8 +65,8 @@ class Joystick:
     return True
 
 
-def joystick_thread(use_keyboard):
-  Params().put_bool('JoystickDebugMode', True)
+def joystick_thread(use_keyboard, mode):
+  Params().put('JoystickDebugMode', mode)
   joystick_sock = messaging.pub_sock('testJoystick')
   joystick = Keyboard() if use_keyboard else Joystick()
 
@@ -67,7 +75,7 @@ def joystick_thread(use_keyboard):
     if ret:
       dat = messaging.new_message('testJoystick')
       dat.testJoystick.axes = [joystick.axes_values[a] for a in joystick.axes_values]
-      dat.testJoystick.buttons = [joystick.cancel]
+      dat.testJoystick.buttons = [joystick.cancel, joystick.lc_l, joystick.lc_r]
       joystick_sock.send(dat.to_bytes())
       print('\n' + ', '.join(f'{name}: {round(v, 3)}' for name, v in joystick.axes_values.items()))
 
@@ -77,7 +85,10 @@ if __name__ == '__main__':
                                                'openpilot must be offroad before starting joysticked.',
                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument('--keyboard', action='store_true', help='Use your keyboard instead of a joystick')
+  parser.add_argument('--mode', default="control", help='Set joystick mode to either debug control or trigger lane changes')
   args = parser.parse_args()
+
+  print(args.mode)
 
   if not Params().get_bool("IsOffroad") and "ZMQ" not in os.environ:
     print("The car must be off before running joystickd.")
@@ -93,4 +104,4 @@ if __name__ == '__main__':
   else:
     print('Using joystick, make sure to run cereal/messaging/bridge on your device if running over the network!')
 
-  joystick_thread(args.keyboard)
+  joystick_thread(args.keyboard, args.mode)
