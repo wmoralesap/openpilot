@@ -622,7 +622,7 @@ class Controls:
   def publish_logs(self, CS, start_time, CC, lac_log):
     """Send actuators and hud commands to the car, send controlsstate and MPC logging"""
 
-      ##
+    ##
     lc_left = False
     lc_right = False
     mock_torque = 0.0
