@@ -70,8 +70,8 @@ class Controls:
       self.camera_packets.append("wideRoadCameraState")
 
     params = Params()
-    self.joystick_mode = params.get_bool("JoystickDebugMode")
-    joystick_packet = ['testJoystick'] if self.joystick_mode else []
+    self.joystick_mode = params.get("JoystickDebugMode", encoding='utf8') # or (self.CP.notCar and sm is None)
+    joystick_packet = ['testJoystick'] if self.joystick_mode in ['control', "lc"] else []
 
     self.sm = sm
     if self.sm is None:
@@ -169,7 +169,7 @@ class Controls:
         set_offroad_alert("Offroad_NoFirmware", True)
     elif self.read_only:
       self.events.add(EventName.dashcamMode, static=True)
-    elif self.joystick_mode:
+    elif self.joystick_mode == 'control':
       self.events.add(EventName.joystickDebug, static=True)
       self.startup_event = None
 
@@ -489,7 +489,7 @@ class Controls:
       self.LaC.reset()
       self.LoC.reset(v_pid=CS.vEgo)
 
-    if not self.joystick_mode:
+    if not self.joystick_mode == 'control':
       # accel PID loop
       pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_kph * CV.KPH_TO_MS)
       actuators.accel = self.LoC.update(self.active, CS, self.CP, long_plan, pid_accel_limits)
@@ -557,6 +557,12 @@ class Controls:
     CC.enabled = self.enabled
     CC.active = self.active
     CC.actuators = actuators
+    ##
+    lc_left = False
+    lc_right = False
+    mock_torque = 0.0
+    mock_steeringPressed = False
+    ##
 
     orientation_value = self.sm['liveLocationKalman'].orientationNED.value
     if len(orientation_value) > 2:
@@ -564,8 +570,17 @@ class Controls:
       CC.pitch = orientation_value[1]
 
     CC.cruiseControl.cancel = CS.cruiseState.enabled and (not self.enabled or not self.CP.pcmCruise)
-    if self.joystick_mode and self.sm.rcv_frame['testJoystick'] > 0 and self.sm['testJoystick'].buttons[0]:
+    if self.joystick_mode == 'control' and self.sm.rcv_frame['testJoystick'] > 0 and self.sm['testJoystick'].buttons[0]:
       CC.cruiseControl.cancel = True
+    # Trigger lane change if Joystick Lane change Mode.
+    elif self.joystick_mode == "lc" and self.sm.rcv_frame['testJoystick'] > 0 and self.sm['testJoystick'].buttons[1]:
+      lc_left = True
+      mock_torque = 0.13
+      mock_steeringPressed = True
+    elif self.joystick_mode == "lc" and self.sm.rcv_frame['testJoystick'] > 0 and self.sm['testJoystick'].buttons[2]:
+      lc_right = True
+      mock_torque = -0.13
+      mock_steeringPressed = True
 
     hudControl = CC.hudControl
     hudControl.setSpeed = float(self.v_cruise_kph * CV.KPH_TO_MS)
@@ -658,7 +673,7 @@ class Controls:
     controlsState.canErrorCounter = self.can_rcv_error_counter
 
     lat_tuning = self.CP.lateralTuning.which()
-    if self.joystick_mode:
+    if self.joystick_mode == 'control':
       controlsState.lateralControlState.debugState = lac_log
     elif self.CP.steerControlType == car.CarParams.SteerControlType.angle:
       controlsState.lateralControlState.angleState = lac_log
@@ -676,6 +691,10 @@ class Controls:
     cs_send = messaging.new_message('carState')
     cs_send.valid = CS.canValid
     cs_send.carState = CS
+    cs_send.carState.leftBlinker = CS.leftBlinker or lc_left
+    cs_send.carState.rightBlinker = CS.rightBlinker or lc_right
+    cs_send.carState.steeringTorque = CS.steeringTorque if not mock_steeringPressed else mock_torque
+    cs_send.carState.steeringPressed = CS.steeringPressed or mock_steeringPressed
     cs_send.carState.events = car_events
     self.pm.send('carState', cs_send)
 
