@@ -193,7 +193,9 @@ class Controls:
       return
 
     self.events.add_from_msg(CS.events)
-    self.events.add_from_msg(self.sm['driverMonitoringState'].events)
+
+    if not self.joystick_mode == 'lc':
+      self.events.add_from_msg(self.sm['driverMonitoringState'].events)
 
     # Create events for battery, temperature, disk space, and memory
     if EON and (self.sm['peripheralState'].pandaType != PandaType.uno) and \
@@ -631,7 +633,7 @@ class Controls:
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
       CC.actuatorsOutput = self.last_actuators
 
-    force_decel = (self.sm['driverMonitoringState'].awarenessStatus < 0.) or \
+    force_decel = (self.sm['driverMonitoringState'].awarenessStatus < 0. and  not self.joystick_mode == 'lc') or \
                   (self.state == State.softDisabling)
 
     # Curvature & Steering angle
