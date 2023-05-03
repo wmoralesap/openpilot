@@ -198,16 +198,17 @@ def plot_model(m, img, calibration, top_down):
     top_down[1][int(round(px - 4)):int(round(px + 4)), py_top:py_bottom] = find_color(top_down[0], YELLOW)
 
   for path, prob, _ in zip(m.laneLines, m.laneLineProbs, m.laneLineStds):
-    color = (0, int(255 * prob), 0)
-    draw_path(path, color, img, calibration, top_down, YELLOW)
+    color = (0, int(255 * 1), 0)
+    draw_path(path, color, img, calibration, top_down, GREEN)
 
   for edge, std in zip(m.roadEdges, m.roadEdgeStds):
     prob = max(1 - std, 0)
     color = (int(255 * prob), 0, 0)
+    color = (int(255 * 1), 0, 0)
     draw_path(edge, color, img, calibration, top_down, RED)
 
-  color = (255, 0, 0)
-  draw_path(m.position, color, img, calibration, top_down, RED, 1.22)
+  color = (0, 0, 255)
+  draw_path(m.position, color, img, calibration, top_down, BLUE, 1.22)
 
 
 def plot_lead(rs, top_down):

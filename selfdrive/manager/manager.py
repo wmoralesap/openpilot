@@ -59,6 +59,10 @@ def manager_init() -> None:
   if os.getenv("PASSIVE") is not None:
     params.put_bool("Passive", bool(int(os.getenv("PASSIVE", "0"))))
 
+  if os.getenv("DEBUGMODE") is not None:
+    params.put("JoystickDebugMode", os.getenv("DEBUGMODE",'lc'))
+
+
   if params.get("Passive") is None:
     raise Exception("Passive must be set to continue")
 
@@ -176,8 +180,8 @@ def main() -> None:
   manager_init()
 
   # Start UI early so prepare can happen in the background
-  if not prepare_only:
-    managed_processes['ui'].start()
+  # if not prepare_only:
+  #   managed_processes['ui'].start()
 
   manager_prepare()
 

@@ -225,7 +225,7 @@ def get_arg_parser():
 
 if __name__ == "__main__":
   args = get_arg_parser().parse_args(sys.argv[1:])
-
+  
   if args.ip_address != "127.0.0.1":
     os.environ["ZMQ"] = "1"
     messaging.context = messaging.Context()

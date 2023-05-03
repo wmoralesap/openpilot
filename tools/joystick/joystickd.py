@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os
+#import os
 import argparse
 from inputs import get_gamepad
 
@@ -90,9 +90,9 @@ if __name__ == '__main__':
 
   print(args.mode)
 
-  if not Params().get_bool("IsOffroad") and "ZMQ" not in os.environ:
-    print("The car must be off before running joystickd.")
-    exit()
+  # if not Params().get_bool("IsOffroad") and "ZMQ" not in os.environ:
+  #   print("The car must be off before running joystickd.")
+  #   exit()
 
   print()
   if args.keyboard:
